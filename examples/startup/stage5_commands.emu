@@ -1,0 +1,29 @@
+# Stage 5: rm and cp change the VFS in memory only. Run it with
+#   ./run.sh --vfs examples/vfs/deep.xml --script examples/startup/stage5_commands.emu
+vfs-info
+# cp: a file to a new name, into a directory, over an existing file.
+cp readme.txt copy.txt
+cp readme.txt home/guest
+cp readme.txt bin/tool.bin
+wc -c bin/tool.bin
+# cp: several files into a directory.
+cp readme.txt home/user/notes.txt /bin
+ls /bin
+# cp -r: a directory with its content, under a new name and into a directory.
+cp -r home/user/docs /docs2
+cp -r home/user/docs bin
+ls -l /docs2
+ls bin
+# rm: a file, several files, -f for missing files.
+rm copy.txt
+rm bin/readme.txt bin/notes.txt
+rm -f nosuch
+# rm -r: a directory with all its content.
+rm -r bin/docs
+rm -r /home/user/projects
+vfs-tree
+vfs-info
+ls
+# The first error stops the script: cp of a directory without -r.
+cp /docs2 /docs3
+echo never printed

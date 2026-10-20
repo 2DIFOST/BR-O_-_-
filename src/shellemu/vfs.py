@@ -7,6 +7,7 @@ from .errors import PathError
 ROOT_NAME = ""
 SEPARATOR = "/"
 CURRENT = "."
+PARENT = ".."
 ERR_NO_ENTRY = "No such file or directory"
 ERR_NOT_DIR = "Not a directory"
 ERR_IS_DIR = "Is a directory"
@@ -32,6 +33,10 @@ class Node:
             node = node.parent
         return SEPARATOR + SEPARATOR.join(reversed(names))
 
+    def clone(self, name: str) -> "Node":
+        """Return a detached deep copy of the node named ``name``."""
+        raise NotImplementedError
+
 
 class File(Node):
     """A file; its content is a sequence of bytes."""
@@ -47,6 +52,10 @@ class File(Node):
     def size(self) -> int:
         """Return the size of the file in bytes."""
         return len(self.data)
+
+    def clone(self, name: str) -> "File":
+        """Return a copy of the file with the same content."""
+        return File(name, self.data)
 
 
 class Directory(Node):
@@ -66,6 +75,18 @@ class Directory(Node):
         node.parent = self
         self.children[node.name] = node
         return node
+
+    def remove(self, name: str) -> None:
+        """Detach the child ``name`` together with all its content."""
+        node = self.children.pop(name)
+        node.parent = None
+
+    def clone(self, name: str) -> "Directory":
+        """Return a deep copy of the directory and everything in it."""
+        copy = Directory(name)
+        for child_name, child in self.children.items():
+            copy.add(child.clone(child_name))
+        return copy
 
 
 @dataclass(frozen=True)
@@ -133,6 +154,35 @@ def resolve(root: Directory, cwd: Directory, path: str) -> Node:
     if path.endswith(SEPARATOR) and not isinstance(node, Directory):
         raise PathError(ERR_NOT_DIR)
     return node
+
+
+def is_inside(node: Node, directory: Directory) -> bool:
+    """Return True if ``node`` is ``directory`` or lies somewhere in it."""
+    current: Node | None = node
+    while current is not None:
+        if current is directory:
+            return True
+        current = current.parent
+    return False
+
+
+def resolve_parent(
+    root: Directory, cwd: Directory, path: str
+) -> tuple[Directory, str]:
+    """Return the directory that holds ``path`` and its last name.
+
+    The last component itself does not have to exist, which makes the
+    function suitable for creating new entries. Raises PathError if
+    the parent is missing or is not a directory.
+    """
+    head, _separator, name = path.rstrip(SEPARATOR).rpartition(SEPARATOR)
+    if name in ("", CURRENT, PARENT):
+        raise PathError(ERR_NO_ENTRY)
+    base = head or (SEPARATOR if path.startswith(SEPARATOR) else CURRENT)
+    parent = resolve(root, cwd, base)
+    if not isinstance(parent, Directory):
+        raise PathError(ERR_NOT_DIR)
+    return parent, name
 
 
 class Vfs:

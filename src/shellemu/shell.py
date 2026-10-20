@@ -2,7 +2,7 @@
 from .commands import COMMANDS
 from .parser import parse_line
 from .response import STATUS_NOT_FOUND, Response
-from .vfs import Node, Vfs, resolve
+from .vfs import Directory, Node, Vfs, resolve, resolve_parent
 
 
 class Shell:
@@ -24,6 +24,10 @@ class Shell:
     def resolve(self, path: str) -> Node:
         """Find the node for ``path`` (raises PathError)."""
         return resolve(self.vfs.root, self.cwd, path)
+
+    def resolve_parent(self, path: str) -> tuple[Directory, str]:
+        """Find the directory that holds ``path`` and its last name."""
+        return resolve_parent(self.vfs.root, self.cwd, path)
 
     def prompt(self) -> str:
         """Return the input prompt with the current directory."""

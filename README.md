@@ -17,6 +17,7 @@
 | 2    | Параметры, стартовый скрипт         | готово |
 | 3    | VFS из XML-файла                    | готово |
 | 4    | `ls`, `cd`, `wc`, `echo`            | готово |
+| 5    | `rm`, `cp`                          | готово |
 
 ## Структура проекта
 
@@ -37,6 +38,12 @@ src/shellemu/        исходный код
     history.py       история ввода (клавиши «вверх»/«вниз»)
     sysinfo.py       данные реальной ОС (пользователь, хост)
     commands/        реализации команд
+        basic.py       exit, echo
+        navigation.py  ls, cd
+        text.py        wc
+        files.py       rm, cp
+        service.py     vfs-info, vfs-tree
+        options.py     разбор коротких опций (-l, -la, --)
 examples/vfs/        примеры VFS в формате XML
 examples/startup/    примеры стартовых скриптов эмулятора (*.emu)
 tests/data/          некорректные XML-файлы для проверки ошибок
@@ -157,6 +164,8 @@ run.sh, Makefile     запуск и сборка
 | `cd [путь]`              | смена текущего каталога                     |
 | `wc [-l] [-w] [-c] файл...` | строки, слова, байты файлов VFS          |
 | `echo [арг...]`          | печатает аргументы через пробел             |
+| `rm [-r] [-f] путь...`   | удаляет файлы и каталоги (только в памяти)  |
+| `cp [-r] источник... назначение` | копирует файлы и каталоги (в памяти) |
 | `exit`                   | закрывает окно эмулятора                    |
 | `vfs-info`               | служебная: сведения о загруженной VFS       |
 | `vfs-tree`               | служебная: дерево VFS                       |
@@ -197,6 +206,44 @@ run.sh, Makefile     запуск и сборка
 
 Печатает аргументы через один пробел; без аргументов — пустая строка.
 Опций нет (`echo -n x` печатает `-n x`).
+
+#### rm
+
+Изменяет только VFS в памяти, XML-файл на диске не меняется.
+
+* файл удаляется без опций; каталог — только с `-r` (или `-R`), вместе
+  со всем содержимым;
+* `-f` не сообщает об отсутствующих путях и о пустом списке операндов;
+* ошибка одного операнда не мешает обработать остальные;
+* ошибки: `rm: missing operand`, `rm: cannot remove 'x': No such file
+  or directory`, `... Is a directory`, `rm: invalid option -- 'x'`;
+* защита: корень (`rm: it is dangerous to operate recursively on '/'`),
+  `.` и `..` (`rm: refusing to remove '.' or '..' directory: ...`) и
+  текущий каталог вместе с его родителями
+  (`rm: cannot remove 'x': Device or resource busy`) не удаляются.
+
+#### cp
+
+Копии создаются только в памяти и не зависят от оригиналов.
+
+* `cp файл новое_имя` — копия под новым именем (существующий файл
+  перезаписывается);
+* `cp файл каталог` и `cp файл1 файл2 ... каталог` — копии внутрь каталога
+  под прежними именами; несколько источников требуют каталог в качестве
+  назначения;
+* каталоги копируются только с `-r` (или `-R`), рекурсивно; если в
+  целевом каталоге уже есть каталог с таким именем, он заменяется копией;
+* ошибки: `cp: missing file operand`,
+  `cp: missing destination file operand after 'x'`,
+  `cp: cannot stat 'x': No such file or directory`,
+  `cp: cannot create regular file 'x': No such file or directory`,
+  `cp: -r not specified; omitting directory 'x'`,
+  `cp: 'a' and 'b' are the same file`,
+  `cp: cannot copy a directory, 'a', into itself, 'b'`,
+  `cp: cannot overwrite directory 'x' with non-directory`,
+  `cp: cannot overwrite non-directory 'x' with directory 'y'`,
+  `cp: target 'x' is not a directory`,
+  `cp: invalid option -- 'x'`; остальные источники всё равно копируются.
 
 Приглашение имеет вид `user@host:<текущий каталог VFS>$`.
 
@@ -241,6 +288,8 @@ make check          # всё вместе
 | `test_stage3_all.sh`           | стартовый скрипт `stage3_all.emu`       |
 | `test_stage4_commands.sh`      | скрипт `stage4_commands.emu` (все режимы) |
 | `test_stage4_errors.sh`        | ошибки `ls`, `cd`, `wc`                 |
+| `test_stage5_commands.sh`      | скрипт `stage5_commands.emu` (rm, cp)   |
+| `test_stage5_errors.sh`        | ошибки `rm`, `cp`, XML не меняется      |
 
 ## Примеры использования
 
@@ -277,4 +326,19 @@ cd: nosuch: No such file or directory
 user@host:/home/user$ foo
 foo: command not found
 user@host:/home/user$ exit
+```
+
+Изменение VFS (`rm`, `cp`), только в памяти:
+
+```
+user@host:/$ cp -r home/user/docs /docs2
+user@host:/$ ls /docs2
+drafts
+report.txt
+user@host:/$ rm -r home
+user@host:/$ rm bin
+rm: cannot remove 'bin': Is a directory
+user@host:/$ cp readme.txt readme.txt
+cp: 'readme.txt' and 'readme.txt' are the same file
+user@host:/$ exit
 ```

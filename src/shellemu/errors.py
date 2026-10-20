@@ -26,7 +26,7 @@ class PathError(EmulatorError):
 
 
 class UsageError(EmulatorError):
-    """A command was called with wrong options."""
+    """A command was called incorrectly; the message is shown as is."""
 
 
 class VfsFormatError(VfsError):
