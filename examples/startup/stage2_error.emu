@@ -1,0 +1,4 @@
+# Stage 2: the script stops at the first error.
+ls first
+cd a b
+ls must-not-run

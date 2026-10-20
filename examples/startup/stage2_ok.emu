@@ -1,0 +1,8 @@
+# Stage 2: startup script without errors.
+# The input and the output are shown as a dialog with the user.
+ls
+ls -l /tmp
+cd docs
+# Empty lines are skipped.
+
+cd
