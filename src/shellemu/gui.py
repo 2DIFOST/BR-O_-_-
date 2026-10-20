@@ -2,8 +2,10 @@
 import tkinter as tk
 from tkinter.scrolledtext import ScrolledText
 
+from .config import Config
+from .errors import GuiUnavailableError
 from .history import History
-from .response import Response
+from .session import KIND_DEBUG, KIND_ERROR, KIND_INPUT, Session
 from .shell import Shell
 
 FONT = ("Courier", 11)
@@ -11,10 +13,14 @@ BACKGROUND = "#1e1e1e"
 FOREGROUND = "#d4d4d4"
 INPUT_COLOR = "#7ec699"
 ERROR_COLOR = "#f48771"
+DEBUG_COLOR = "#8a8a8a"
 WINDOW_SIZE = "800x500"
 
-TAG_INPUT = "input"
-TAG_ERROR = "error"
+TAG_COLORS = {
+    KIND_INPUT: INPUT_COLOR,
+    KIND_ERROR: ERROR_COLOR,
+    KIND_DEBUG: DEBUG_COLOR,
+}
 
 
 class EmulatorWindow:
@@ -22,9 +28,12 @@ class EmulatorWindow:
 
     def __init__(self, shell: Shell, title: str) -> None:
         """Build the window for the given shell."""
-        self.shell = shell
+        try:
+            self.root = tk.Tk()
+        except tk.TclError as error:
+            raise GuiUnavailableError(str(error)) from error
+        self.session = Session(shell, self)
         self.history = History()
-        self.root = tk.Tk()
         self.root.title(title)
         self.root.geometry(WINDOW_SIZE)
         self.output = self.build_output()
@@ -37,8 +46,8 @@ class EmulatorWindow:
             self.root, font=FONT, bg=BACKGROUND, fg=FOREGROUND,
             state=tk.DISABLED, wrap=tk.WORD,
         )
-        output.tag_configure(TAG_INPUT, foreground=INPUT_COLOR)
-        output.tag_configure(TAG_ERROR, foreground=ERROR_COLOR)
+        for tag, color in TAG_COLORS.items():
+            output.tag_configure(tag, foreground=color)
         output.pack(fill=tk.BOTH, expand=True)
         return output
 
@@ -61,42 +70,35 @@ class EmulatorWindow:
 
     def refresh_prompt(self) -> None:
         """Show the current prompt of the shell."""
-        self.prompt_label.configure(text=self.shell.prompt())
+        self.prompt_label.configure(text=self.session.shell.prompt())
 
-    def write(self, text: str, tag: str | None = None) -> None:
-        """Append a line to the output area and scroll down."""
+    def write(self, text: str, kind: str) -> None:
+        """Append a line to the output area and scroll down.
+
+        Debug lines are duplicated to stdout of the real terminal.
+        """
         self.output.configure(state=tk.NORMAL)
-        self.output.insert(tk.END, text + "\n", tag)
+        self.output.insert(tk.END, text + "\n", kind)
         self.output.configure(state=tk.DISABLED)
         self.output.see(tk.END)
+        if kind == KIND_DEBUG:
+            print(text, flush=True)
 
-    def show_response(self, response: Response) -> None:
-        """Print all messages of a command."""
-        for message in response.messages:
-            tag = TAG_ERROR if message.is_error else None
-            self.write(message.text, tag)
-
-    def run_line(self, line: str) -> Response:
-        """Echo a line as if typed, execute it and show the result."""
-        self.write(self.shell.prompt() + line, TAG_INPUT)
-        response = self.shell.execute(line)
-        self.show_response(response)
-        self.refresh_prompt()
-        return response
-
-    def on_enter(self, _event: tk.Event) -> None:
+    def on_enter(self, _event: tk.Event | None) -> None:
         """Handle the Enter key: execute the typed line."""
         line = self.entry.get()
         self.entry.delete(0, tk.END)
         self.history.add(line)
-        if self.run_line(line).should_exit:
+        self.session.run_line(line)
+        self.refresh_prompt()
+        if self.session.finished:
             self.close()
 
-    def on_up(self, _event: tk.Event) -> None:
+    def on_up(self, _event: tk.Event | None) -> None:
         """Show the previous command from the history."""
         self.set_entry(self.history.previous())
 
-    def on_down(self, _event: tk.Event) -> None:
+    def on_down(self, _event: tk.Event | None) -> None:
         """Show the next command from the history."""
         self.set_entry(self.history.following())
 
@@ -109,6 +111,15 @@ class EmulatorWindow:
         """Close the window."""
         self.root.destroy()
 
-    def run(self) -> None:
-        """Start the event loop."""
-        self.root.mainloop()
+    def run(self, config: Config) -> None:
+        """Run the startup actions, then the event loop.
+
+        If the startup script ends with ``exit`` the window is closed
+        without entering the loop.
+        """
+        self.session.startup(config)
+        self.refresh_prompt()
+        if self.session.finished:
+            self.close()
+        else:
+            self.root.mainloop()
