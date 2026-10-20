@@ -1,6 +1,9 @@
 """Tests of the graphical interface (skipped without a display)."""
 import unittest
 
+from helpers import write_temp
+from shellemu.config import Config
+from shellemu.errors import GuiUnavailableError
 from shellemu.shell import Shell
 
 try:
@@ -14,7 +17,7 @@ def make_window():
     """Create a window or return None if there is no display."""
     try:
         return EmulatorWindow(Shell("tester@box"), "Test")
-    except tkinter.TclError:
+    except GuiUnavailableError:
         return None
 
 
@@ -55,6 +58,20 @@ class GuiTest(unittest.TestCase):
     def test_entry_is_cleared_after_enter(self):
         self.type_line("ls")
         self.assertEqual(self.window.entry.get(), "")
+
+    def test_debug_and_script_are_shown(self):
+        path = write_temp(self, "s.emu", "ls a\n")
+        self.window.session.startup(Config(None, path, False))
+        text = self.output_text()
+        self.assertIn("[debug]   no-gui = False", text)
+        self.assertIn("tester@box:~$ ls a", text)
+
+    def test_exit_closes_window(self):
+        self.type_line("exit")
+        self.assertTrue(self.window.session.finished)
+        with self.assertRaises(tkinter.TclError):
+            self.window.root.winfo_exists()
+        self.window = None
 
     def test_history_with_up_key(self):
         self.type_line("ls")
