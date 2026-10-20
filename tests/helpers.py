@@ -5,6 +5,12 @@ import tempfile
 from shellemu.session import KIND_ERROR
 
 
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+EXAMPLE_VFS = os.path.join(ROOT, "examples", "vfs")
+EXAMPLE_STARTUP = os.path.join(ROOT, "examples", "startup")
+TEST_DATA = os.path.join(ROOT, "tests", "data")
+
+
 class ListOutput:
     """Output that remembers everything written to it."""
 

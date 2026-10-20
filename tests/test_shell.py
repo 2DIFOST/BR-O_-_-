@@ -16,8 +16,8 @@ class ShellTest(unittest.TestCase):
     def setUp(self):
         self.shell = Shell("tester@box")
 
-    def test_prompt_contains_identity(self):
-        self.assertIn("tester@box", self.shell.prompt())
+    def test_prompt_contains_identity_and_directory(self):
+        self.assertEqual(self.shell.prompt(), "tester@box:/$ ")
 
     def test_empty_line_does_nothing(self):
         response = self.shell.execute("   ")

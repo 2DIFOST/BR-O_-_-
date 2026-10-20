@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<vfs>
+  <file name="hello.txt">Hello, world!
+</file>
+  <file name="notes.txt">one two three
+four five
+six
+</file>
+  <file name="russian.txt">Привет, мир!
+</file>
+  <file name="empty.txt"/>
+  <file name="data.bin" encoding="base64">AAECAwQFBgcICQoLDA0ODw==</file>
+</vfs>

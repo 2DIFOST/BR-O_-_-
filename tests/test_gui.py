@@ -1,7 +1,8 @@
 """Tests of the graphical interface (skipped without a display)."""
+import os
 import unittest
 
-from helpers import write_temp
+from helpers import EXAMPLE_VFS, write_temp
 from shellemu.config import Config
 from shellemu.errors import GuiUnavailableError
 from shellemu.shell import Shell
@@ -48,7 +49,7 @@ class GuiTest(unittest.TestCase):
 
     def test_dialog_is_shown(self):
         self.type_line("ls -l")
-        self.assertIn("tester@box:~$ ls -l", self.output_text())
+        self.assertIn("tester@box:/$ ls -l", self.output_text())
         self.assertIn("ls -l\n", self.output_text())
 
     def test_error_is_shown(self):
@@ -64,7 +65,17 @@ class GuiTest(unittest.TestCase):
         self.window.session.startup(Config(None, path, False))
         text = self.output_text()
         self.assertIn("[debug]   no-gui = False", text)
-        self.assertIn("tester@box:~$ ls a", text)
+        self.assertIn("tester@box:/$ ls a", text)
+
+    def test_vfs_is_loaded_and_shown(self):
+        path = os.path.join(EXAMPLE_VFS, "deep.xml")
+        script = write_temp(self, "s.emu", "vfs-info\n")
+        self.window.session.startup(Config(path, script, False))
+        self.assertIn("directories: 9", self.output_text())
+
+    def test_vfs_error_is_shown(self):
+        self.window.session.startup(Config("/no/such/vfs.xml", None, False))
+        self.assertIn("vfs error: cannot load VFS", self.output_text())
 
     def test_exit_closes_window(self):
         self.type_line("exit")

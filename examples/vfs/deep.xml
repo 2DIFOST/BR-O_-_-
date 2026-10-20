@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<vfs>
+  <file name="readme.txt">Deep VFS example.
+</file>
+  <dir name="bin">
+    <file name="tool.bin" encoding="base64">f0VMRgIBAQA=</file>
+  </dir>
+  <dir name="home">
+    <dir name="guest">
+      <file name=".hidden">secret
+</file>
+    </dir>
+    <dir name="user">
+      <file name="notes.txt">buy milk
+call mom
+</file>
+      <dir name="docs">
+        <file name="report.txt">Quarterly report: all tests pass.
+</file>
+        <dir name="drafts">
+          <file name="idea.txt">An emulator of the shell.
+</file>
+        </dir>
+      </dir>
+      <dir name="projects">
+        <dir name="emulator">
+          <file name="readme.md"># Emulator
+A tiny shell.
+</file>
+          <dir name="src">
+            <file name="main.py">print("hello")
+</file>
+            <file name="util.py">def add(a, b):
+    return a + b
+</file>
+          </dir>
+        </dir>
+      </dir>
+    </dir>
+  </dir>
+</vfs>
