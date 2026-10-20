@@ -15,6 +15,7 @@
 |------|-------------------------------------|--------|
 | 1    | REPL, GUI, заглушки `ls`, `cd`      | готово |
 | 2    | Параметры, стартовый скрипт         | готово |
+| 3    | VFS из XML-файла                    | готово |
 
 ## Структура проекта
 
@@ -27,13 +28,17 @@ src/shellemu/        исходный код
     console.py       терминальный режим (--no-gui)
     errors.py        исключения эмулятора
     gui.py           графический интерфейс (tkinter)
+    vfs.py           модель виртуальной файловой системы в памяти
+    vfs_loader.py    загрузка VFS из XML
     shell.py         ядро: разбор и выполнение команд (без GUI)
     parser.py        разбиение строки на команду и аргументы
     response.py      результат выполнения команды
     history.py       история ввода (клавиши «вверх»/«вниз»)
     sysinfo.py       данные реальной ОС (пользователь, хост)
     commands/        реализации команд
+examples/vfs/        примеры VFS в формате XML
 examples/startup/    примеры стартовых скриптов эмулятора (*.emu)
+tests/data/          некорректные XML-файлы для проверки ошибок
 tests/               модульные тесты
 tests/scripts/       скрипты реальной ОС (sh), вызывающие эмулятор
 run.sh, Makefile     запуск и сборка
@@ -69,6 +74,65 @@ run.sh, Makefile     запуск и сборка
   `script error: cannot read script '<файл>': ...`.
 * Команда `exit` в скрипте завершает эмулятор.
 
+## Виртуальная файловая система (VFS)
+
+Источник VFS — XML-файл (параметр `--vfs`). Все операции выполняются
+**в памяти**: файл только читается, на диск ничего не распаковывается
+и не записывается. Без параметра `--vfs` используется пустая VFS
+(только корневой каталог `/`).
+
+Формат файла:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<vfs>
+  <file name="hello.txt">Hello, world!
+</file>
+  <dir name="docs">
+    <file name="empty.txt"/>
+    <file name="data.bin" encoding="base64">AAECAwQFBgcICQoLDA0ODw==</file>
+  </dir>
+</vfs>
+```
+
+* корневой элемент `<vfs>` — корневой каталог `/`;
+* `<dir name="...">` — каталог, внутри которого могут быть `<dir>` и
+  `<file>`;
+* `<file name="...">` — файл; текст внутри элемента — содержимое в
+  UTF-8 (как есть, включая переводы строк);
+* `encoding="base64"` — содержимое двоичное, закодировано в base64
+  (пробелы и переводы строк внутри игнорируются); `encoding="text"` —
+  значение по умолчанию;
+* имя обязательно, не может быть `.` и `..`, содержать `/` и пробельные
+  символы (иначе его нельзя набрать в командной строке), имена внутри
+  одного каталога уникальны.
+
+Примеры: `examples/vfs/minimal.xml` (пустая VFS),
+`several_files.xml` (несколько файлов, в том числе двоичный и
+с русским текстом), `deep.xml` (6 уровней каталогов и файлов).
+
+### Ошибки загрузки VFS
+
+Сообщение имеет вид `vfs error: cannot load VFS '<путь>': <причина>`:
+
+| Ситуация                    | Причина в сообщении                       |
+|-----------------------------|-------------------------------------------|
+| файл не найден / это папка  | `No such file or directory`, `Is a directory` |
+| не well-formed XML          | `invalid XML (...)`                       |
+| неверная структура          | `invalid format: ...` (неверный корень, неизвестный элемент, нет имени, плохое имя, дубликат, ошибочный base64 или `encoding`) |
+
+После ошибки эмулятор продолжает работать с пустой VFS, код завершения
+процесса — 1. Стартовый скрипт в этом случае **не запускается**
+(`script error: startup script skipped, the VFS was not loaded`), так
+как его команды рассчитаны на загруженную VFS.
+
+### Служебные команды
+
+| Команда    | Описание                                                    |
+|------------|-------------------------------------------------------------|
+| `vfs-info` | источник, число каталогов и файлов, общий размер, глубина   |
+| `vfs-tree` | вся VFS в виде дерева (у файлов указан размер в байтах)     |
+
 ## Описание функций
 
 ### Парсер
@@ -91,6 +155,10 @@ run.sh, Makefile     запуск и сборка
 | `ls [арг...]`    | заглушка: печатает своё имя и аргументы             |
 | `cd [арг]`       | заглушка: печатает своё имя и аргумент              |
 | `exit`           | закрывает окно эмулятора                            |
+| `vfs-info`       | служебная: сведения о загруженной VFS               |
+| `vfs-tree`       | служебная: дерево VFS                               |
+
+Приглашение имеет вид `user@host:<текущий каталог VFS>$`.
 
 ### Интерфейс
 
@@ -126,6 +194,11 @@ make check          # всё вместе
 | `test_params_all.sh`           | все параметры вместе                    |
 | `test_params_invalid.sh`       | неизвестный параметр                    |
 | `test_gui_smoke.sh`            | запуск окна и выход по `exit` в скрипте |
+| `test_vfs_minimal.sh`          | минимальная VFS                         |
+| `test_vfs_several_files.sh`    | несколько файлов, base64                |
+| `test_vfs_deep.sh`             | 6 уровней каталогов и файлов            |
+| `test_vfs_errors.sh`           | все виды ошибок загрузки VFS            |
+| `test_stage3_all.sh`           | стартовый скрипт `stage3_all.emu`       |
 
 ## Примеры использования
 
@@ -137,10 +210,10 @@ $ ./run.sh --no-gui --script examples/startup/stage2_error.emu
 [debug]   vfs    = (not set)
 [debug]   script = examples/startup/stage2_error.emu
 [debug]   no-gui = True
-user@host:~$ # Stage 2: the script stops at the first error.
-user@host:~$ ls first
+user@host:/$ # Stage 2: the script stops at the first error.
+user@host:/$ ls first
 ls first
-user@host:~$ cd a b
+user@host:/$ cd a b
 cd: too many arguments
 script error: examples/startup/stage2_error.emu: line 3 failed with status 1, script stopped
 ```
@@ -148,13 +221,13 @@ script error: examples/startup/stage2_error.emu: line 3 failed with status 1, sc
 Интерактивный сеанс:
 
 ```
-user@host:~$ ls -l /tmp
+user@host:/$ ls -l /tmp
 ls -l /tmp
-user@host:~$ cd docs
+user@host:/$ cd docs
 cd docs
-user@host:~$ cd a b
+user@host:/$ cd a b
 cd: too many arguments
-user@host:~$ foo
+user@host:/$ foo
 foo: command not found
-user@host:~$ exit
+user@host:/$ exit
 ```
