@@ -14,10 +14,11 @@ Format::
 """
 import base64
 import binascii
+import os
 import xml.etree.ElementTree as ET
 
 from .errors import VfsError, VfsFormatError
-from .vfs import Directory, File, Node, Vfs
+from .vfs import ERR_IS_DIR, Directory, File, Node, Vfs
 
 ROOT_TAG = "vfs"
 TAG_DIR = "dir"
@@ -109,6 +110,8 @@ def build_root(element: ET.Element) -> Directory:
 
 def read_bytes(path: str) -> bytes:
     """Read the XML file; report problems as VfsError."""
+    if os.path.isdir(path):
+        raise VfsError(f"cannot load VFS '{path}': {ERR_IS_DIR}")
     try:
         with open(path, "rb") as file:
             return file.read()

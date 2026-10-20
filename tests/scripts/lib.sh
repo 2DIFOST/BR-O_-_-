@@ -1,6 +1,9 @@
 #!/bin/sh
 # Common helpers for the real-OS test scripts.
-ROOT=$(cd "$(dirname "$0")/../.." && pwd)
+# Git Bash on Windows: keep native paths and UTF-8 output.
+export MSYS_NO_PATHCONV=1
+export PYTHONUTF8=1
+ROOT=$(cd "$(dirname "$0")/../.." && { pwd -W 2>/dev/null || pwd; })
 EMU="$ROOT/run.sh"
 STARTUP="$ROOT/examples/startup"
 VFS="$ROOT/examples/vfs"

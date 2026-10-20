@@ -26,7 +26,7 @@ check_error "no name" "$DATA/no_name.xml" \
 check_error "bad name" "$DATA/bad_name.xml" "invalid format: invalid name"
 check_error "duplicate" "$DATA/duplicate.xml" \
     "invalid format: duplicate name 'a' in '/'"
-check_error "directory instead of file" /tmp "Is a directory"
+check_error "directory instead of file" "$ROOT" "Is a directory"
 
 echo "-- the startup script is skipped after a VFS error"
 run_emu '' --no-gui --vfs /no/such/vfs.xml --script "$STARTUP/stage3_vfs.emu"
