@@ -11,3 +11,11 @@ class ScriptError(EmulatorError):
 
 class GuiUnavailableError(EmulatorError):
     """The graphical window cannot be opened (no display)."""
+
+
+class VfsError(EmulatorError):
+    """The virtual file system cannot be loaded."""
+
+
+class VfsFormatError(VfsError):
+    """The XML file does not describe a valid virtual file system."""
