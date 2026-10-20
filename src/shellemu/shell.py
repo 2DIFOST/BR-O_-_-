@@ -2,7 +2,7 @@
 from .commands import COMMANDS
 from .parser import parse_line
 from .response import STATUS_NOT_FOUND, Response
-from .vfs import Vfs
+from .vfs import Node, Vfs, resolve
 
 
 class Shell:
@@ -20,6 +20,10 @@ class Shell:
         """Replace the VFS; the current directory becomes its root."""
         self.vfs = vfs
         self.cwd = vfs.root
+
+    def resolve(self, path: str) -> Node:
+        """Find the node for ``path`` (raises PathError)."""
+        return resolve(self.vfs.root, self.cwd, path)
 
     def prompt(self) -> str:
         """Return the input prompt with the current directory."""

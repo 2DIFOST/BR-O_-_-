@@ -21,13 +21,13 @@ class ConsoleModeTest(unittest.TestCase):
     """The --no-gui mode behaves like the window."""
 
     def test_stdin_dialog_is_echoed(self):
-        status, out, _err = run_main(["--no-gui"], "ls x\nexit\n")
+        status, out, _err = run_main(["--no-gui"], "echo x\nexit\n")
         self.assertEqual(status, cli.EXIT_OK)
-        self.assertRegex(out, r"\$ ls x\nls x\n")
+        self.assertRegex(out, r"\$ echo x\nx\n")
         self.assertIn("[debug]   no-gui = True", out)
 
     def test_end_of_input_finishes(self):
-        status, _out, _err = run_main(["--no-gui"], "ls\n")
+        status, _out, _err = run_main(["--no-gui"], "echo\n")
         self.assertEqual(status, cli.EXIT_OK)
 
     def test_errors_go_to_stderr(self):
@@ -42,10 +42,10 @@ class ConsoleModeTest(unittest.TestCase):
         self.assertIn("script error", err)
 
     def test_successful_script(self):
-        path = write_temp(self, "s.emu", "ls a\nexit\n")
+        path = write_temp(self, "s.emu", "echo a\nexit\n")
         status, out, _err = run_main(["--no-gui", "--script", path])
         self.assertEqual(status, cli.EXIT_OK)
-        self.assertIn("ls a", out)
+        self.assertIn("\na\n", out)
 
 
 if __name__ == "__main__":

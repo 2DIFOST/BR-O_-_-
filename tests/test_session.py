@@ -16,30 +16,30 @@ class SessionTest(unittest.TestCase):
         self.session = Session(Shell("u@h"), self.output)
 
     def test_run_line_echoes_input(self):
-        self.session.run_line("ls a")
+        self.session.run_line("echo a")
         self.assertEqual(self.output.records[0][1], KIND_INPUT)
-        self.assertEqual(self.output.texts()[0], "u@h:/$ ls a")
-        self.assertEqual(self.output.texts()[1], "ls a")
+        self.assertEqual(self.output.texts()[0], "u@h:/$ echo a")
+        self.assertEqual(self.output.texts()[1], "a")
 
     def test_execute_line_does_not_echo(self):
-        self.session.execute_line("ls a")
-        self.assertEqual(self.output.texts(), ["ls a"])
+        self.session.execute_line("echo a")
+        self.assertEqual(self.output.texts(), ["a"])
 
     def test_exit_finishes_session(self):
         self.session.run_line("exit")
         self.assertTrue(self.session.finished)
 
     def test_script_runs_as_dialog(self):
-        path = write_temp(self, "s.emu", "ls a\n\ncd b\n")
+        path = write_temp(self, "s.emu", "echo a\n\ncd /\n")
         self.assertTrue(self.session.run_script(path))
         self.assertEqual(self.output.texts(), [
-            "u@h:/$ ls a", "ls a", "u@h:/$ cd b", "cd b",
+            "u@h:/$ echo a", "a", "u@h:/$ cd /",
         ])
 
     def test_script_stops_at_first_error(self):
-        path = write_temp(self, "s.emu", "ls a\nfoo\nls never\n")
+        path = write_temp(self, "s.emu", "echo a\nfoo\necho never\n")
         self.assertFalse(self.session.run_script(path))
-        self.assertNotIn("ls never", self.output.texts())
+        self.assertNotIn("never", self.output.texts())
         self.assertIn("foo: command not found", self.output.errors())
         self.assertIn("line 2 failed", self.output.errors()[-1])
 
@@ -49,10 +49,10 @@ class SessionTest(unittest.TestCase):
         self.assertEqual(self.output.texts()[0], "u@h:/$ # note")
 
     def test_script_exit_stops_the_rest(self):
-        path = write_temp(self, "s.emu", "exit\nls never\n")
+        path = write_temp(self, "s.emu", "exit\necho never\n")
         self.assertTrue(self.session.run_script(path))
         self.assertTrue(self.session.finished)
-        self.assertNotIn("ls never", self.output.texts())
+        self.assertNotIn("never", self.output.texts())
 
     def test_missing_script_is_reported(self):
         self.assertFalse(self.session.run_script("/no/such/file"))

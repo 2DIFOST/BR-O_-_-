@@ -6,5 +6,5 @@ run_emu 'exit\n' --no-gui --script "$STARTUP/stage2_error.emu"
 expect_status 1
 expect_output "cd: too many arguments"
 expect_output "line 3 failed with status 1, script stopped"
-expect_no_output "ls must-not-run"
+expect_no_output "echo must-not-run"
 finish

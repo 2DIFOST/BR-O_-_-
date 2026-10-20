@@ -11,7 +11,7 @@ def texts(response):
 
 
 class ShellTest(unittest.TestCase):
-    """Behaviour of the stub commands and error reporting."""
+    """Behaviour of the shell core and error reporting."""
 
     def setUp(self):
         self.shell = Shell("tester@box")
@@ -30,17 +30,14 @@ class ShellTest(unittest.TestCase):
         self.assertEqual(response.status, STATUS_NOT_FOUND)
         self.assertTrue(response.messages[0].is_error)
 
-    def test_ls_stub_prints_name_and_arguments(self):
-        response = self.shell.execute("ls -l /tmp /var")
-        self.assertEqual(texts(response), ["ls -l /tmp /var"])
+    def test_ls_of_empty_vfs_prints_nothing(self):
+        response = self.shell.execute("ls")
+        self.assertEqual(texts(response), [])
         self.assertEqual(response.status, STATUS_OK)
 
-    def test_ls_stub_without_arguments(self):
-        self.assertEqual(texts(self.shell.execute("ls")), ["ls"])
-
-    def test_cd_stub_prints_name_and_argument(self):
-        self.assertEqual(texts(self.shell.execute("cd docs")), ["cd docs"])
-        self.assertEqual(texts(self.shell.execute("cd")), ["cd"])
+    def test_cd_without_arguments_goes_to_root(self):
+        self.assertTrue(self.shell.execute("cd").ok)
+        self.assertEqual(self.shell.prompt(), "tester@box:/$ ")
 
     def test_cd_with_too_many_arguments(self):
         response = self.shell.execute("cd a b")

@@ -17,5 +17,17 @@ class VfsError(EmulatorError):
     """The virtual file system cannot be loaded."""
 
 
+class PathError(EmulatorError):
+    """A path does not lead to a suitable node of the VFS.
+
+    The message is the reason in the style of UNIX tools, e.g.
+    ``No such file or directory``.
+    """
+
+
+class UsageError(EmulatorError):
+    """A command was called with wrong options."""
+
+
 class VfsFormatError(VfsError):
     """The XML file does not describe a valid virtual file system."""

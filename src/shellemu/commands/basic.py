@@ -11,3 +11,10 @@ def cmd_exit(shell, args: list[str]) -> Response:
         case _:
             response.err("exit: too many arguments")
     return response
+
+
+def cmd_echo(shell, args: list[str]) -> Response:
+    """Print the arguments separated by single spaces."""
+    response = Response()
+    response.out(" ".join(args))
+    return response

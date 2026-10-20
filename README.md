@@ -16,6 +16,7 @@
 | 1    | REPL, GUI, заглушки `ls`, `cd`      | готово |
 | 2    | Параметры, стартовый скрипт         | готово |
 | 3    | VFS из XML-файла                    | готово |
+| 4    | `ls`, `cd`, `wc`, `echo`            | готово |
 
 ## Структура проекта
 
@@ -148,15 +149,54 @@ run.sh, Makefile     запуск и сборка
 
 Сообщения об ошибках выделяются в окне красным цветом.
 
-### Команды (этап 1)
+### Команды
 
-| Команда          | Поведение                                           |
-|------------------|-----------------------------------------------------|
-| `ls [арг...]`    | заглушка: печатает своё имя и аргументы             |
-| `cd [арг]`       | заглушка: печатает своё имя и аргумент              |
-| `exit`           | закрывает окно эмулятора                            |
-| `vfs-info`       | служебная: сведения о загруженной VFS               |
-| `vfs-tree`       | служебная: дерево VFS                               |
+| Команда                  | Поведение                                   |
+|--------------------------|---------------------------------------------|
+| `ls [-a] [-l] [путь...]` | список файлов и каталогов VFS               |
+| `cd [путь]`              | смена текущего каталога                     |
+| `wc [-l] [-w] [-c] файл...` | строки, слова, байты файлов VFS          |
+| `echo [арг...]`          | печатает аргументы через пробел             |
+| `exit`                   | закрывает окно эмулятора                    |
+| `vfs-info`               | служебная: сведения о загруженной VFS       |
+| `vfs-tree`               | служебная: дерево VFS                       |
+
+Пути могут быть абсолютными (`/home/user`) и относительными
+(`docs/../notes.txt`); `.` и `..` поддерживаются, `..` корня — это
+корень. Имена с пробелами невозможны (парсер делит строку по пробелам).
+
+#### ls
+
+* без аргументов выводит текущий каталог, по одному имени в строке,
+  в алфавитном порядке; имена, начинающиеся с `.`, скрыты;
+* `-a` показывает скрытые имена, а также `.` и `..`;
+* `-l` — длинный формат: тип (`d` каталог, `-` файл), размер в байтах,
+  имя (`- 18 notes.txt`);
+* опции можно объединять (`-la`); `--` завершает список опций;
+* несколько операндов: сначала файлы, затем каталоги с заголовками
+  `путь:`, блоки разделены пустой строкой;
+* ошибки: `ls: cannot access 'x': No such file or directory`,
+  `ls: invalid option -- 'x'`. Остальные операнды при этом выводятся.
+
+#### cd
+
+* без аргументов — переход в корень `/` (домашнего каталога в VFS нет);
+* ошибки: `cd: x: No such file or directory`, `cd: x: Not a directory`,
+  `cd: too many arguments`.
+
+#### wc
+
+* по умолчанию выводит строки, слова и байты; `-l`, `-w`, `-c` выбирают
+  счётчики (порядок вывода всегда строки, слова, байты);
+* для нескольких файлов добавляется строка `total`;
+* считаются байты, а не символы (двоичные файлы из base64 работают так же);
+* ошибки: `wc: missing file operand` (stdin нет), `wc: x: Is a directory`,
+  `wc: x: No such file or directory`; остальные файлы всё равно считаются.
+
+#### echo
+
+Печатает аргументы через один пробел; без аргументов — пустая строка.
+Опций нет (`echo -n x` печатает `-n x`).
 
 Приглашение имеет вид `user@host:<текущий каталог VFS>$`.
 
@@ -199,6 +239,8 @@ make check          # всё вместе
 | `test_vfs_deep.sh`             | 6 уровней каталогов и файлов            |
 | `test_vfs_errors.sh`           | все виды ошибок загрузки VFS            |
 | `test_stage3_all.sh`           | стартовый скрипт `stage3_all.emu`       |
+| `test_stage4_commands.sh`      | скрипт `stage4_commands.emu` (все режимы) |
+| `test_stage4_errors.sh`        | ошибки `ls`, `cd`, `wc`                 |
 
 ## Примеры использования
 
@@ -211,23 +253,28 @@ $ ./run.sh --no-gui --script examples/startup/stage2_error.emu
 [debug]   script = examples/startup/stage2_error.emu
 [debug]   no-gui = True
 user@host:/$ # Stage 2: the script stops at the first error.
-user@host:/$ ls first
-ls first
+user@host:/$ echo first
+first
 user@host:/$ cd a b
 cd: too many arguments
 script error: examples/startup/stage2_error.emu: line 3 failed with status 1, script stopped
 ```
 
-Интерактивный сеанс:
+Интерактивный сеанс с VFS (`./run.sh --vfs examples/vfs/deep.xml`):
 
 ```
-user@host:/$ ls -l /tmp
-ls -l /tmp
-user@host:/$ cd docs
-cd docs
-user@host:/$ cd a b
-cd: too many arguments
-user@host:/$ foo
+user@host:/$ ls -l
+d  0 bin
+d  0 home
+- 18 readme.txt
+user@host:/$ cd home/user
+user@host:/home/user$ wc notes.txt
+ 2  4 18 notes.txt
+user@host:/home/user$ echo done
+done
+user@host:/home/user$ cd nosuch
+cd: nosuch: No such file or directory
+user@host:/home/user$ foo
 foo: command not found
-user@host:/$ exit
+user@host:/home/user$ exit
 ```

@@ -3,6 +3,8 @@ import os
 import tempfile
 
 from shellemu.session import KIND_ERROR
+from shellemu.shell import Shell
+from shellemu.vfs_loader import load_vfs
 
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -39,3 +41,15 @@ def write_temp(test, name, content):
     with open(path, "w", encoding="utf-8") as file:
         file.write(content)
     return path
+
+
+def texts(response):
+    """Return the texts of all messages of a response."""
+    return [message.text for message in response.messages]
+
+
+def shell_with(name):
+    """Return a shell with the example VFS ``name`` loaded."""
+    shell = Shell("u@h")
+    shell.attach_vfs(load_vfs(os.path.join(EXAMPLE_VFS, name)))
+    return shell

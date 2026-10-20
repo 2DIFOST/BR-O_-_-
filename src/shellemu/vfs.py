@@ -2,8 +2,14 @@
 from collections.abc import Iterator
 from dataclasses import dataclass
 
+from .errors import PathError
+
 ROOT_NAME = ""
 SEPARATOR = "/"
+CURRENT = "."
+ERR_NO_ENTRY = "No such file or directory"
+ERR_NOT_DIR = "Not a directory"
+ERR_IS_DIR = "Is a directory"
 
 
 class Node:
@@ -97,6 +103,36 @@ def tree_lines(directory: Directory, prefix: str = "") -> Iterator[str]:
         yield prefix + ("`-- " if last else "|-- ") + describe(node)
         if isinstance(node, Directory):
             yield from tree_lines(node, prefix + ("    " if last else "|   "))
+
+
+def step(node: Node, part: str) -> Node:
+    """Return the node reached from ``node`` by one path component."""
+    if not isinstance(node, Directory):
+        raise PathError(ERR_NOT_DIR)
+    match part:
+        case "" | ".":
+            return node
+        case "..":
+            return node.parent if node.parent is not None else node
+        case _:
+            child = node.children.get(part)
+            if child is None:
+                raise PathError(ERR_NO_ENTRY)
+            return child
+
+
+def resolve(root: Directory, cwd: Directory, path: str) -> Node:
+    """Find the node for an absolute or relative path.
+
+    Raises PathError if some component does not exist or a file is
+    used as a directory (also when the path ends with ``/``).
+    """
+    node: Node = root if path.startswith(SEPARATOR) else cwd
+    for part in path.split(SEPARATOR):
+        node = step(node, part)
+    if path.endswith(SEPARATOR) and not isinstance(node, Directory):
+        raise PathError(ERR_NOT_DIR)
+    return node
 
 
 class Vfs:
