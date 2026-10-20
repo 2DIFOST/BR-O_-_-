@@ -4,6 +4,7 @@ ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 EMU="$ROOT/run.sh"
 STARTUP="$ROOT/examples/startup"
 VFS="$ROOT/examples/vfs"
+DATA="$ROOT/tests/data"
 OUTPUT=""
 STATUS=0
 FAILED=0

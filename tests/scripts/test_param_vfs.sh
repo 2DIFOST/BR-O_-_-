@@ -1,8 +1,10 @@
 #!/bin/sh
-# --vfs: the path is accepted and printed in the debug output.
+# --vfs: the path is accepted, printed and the VFS is loaded.
 . "$(dirname "$0")/lib.sh"
 
-run_emu 'exit\n' --no-gui --vfs /some/place/vfs.xml
+run_emu 'vfs-info\nexit\n' --no-gui --vfs "$VFS/minimal.xml"
 expect_status 0
-expect_output "[debug]   vfs    = /some/place/vfs.xml"
+expect_output "[debug]   vfs    = $VFS/minimal.xml"
+expect_output "source:      $VFS/minimal.xml"
+expect_no_output "vfs error"
 finish

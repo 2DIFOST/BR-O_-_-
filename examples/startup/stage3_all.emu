@@ -1,0 +1,11 @@
+# Stage 3: all commands implemented so far. Run it with --vfs, e.g.
+#   ./run.sh --vfs examples/vfs/deep.xml --script examples/startup/stage3_all.emu
+# Service commands of the VFS: statistics and the tree.
+vfs-info
+vfs-tree
+# Commands of stage 1.
+ls
+cd
+# Error handling: the script stops at the first error.
+cd a b
+vfs-info

@@ -1,5 +1,5 @@
 #!/bin/sh
-# The window opens, runs the startup script and closes on exit.
+# The window opens, loads a VFS, runs the script and closes on exit.
 . "$(dirname "$0")/lib.sh"
 
 if [ -z "$DISPLAY" ]; then
@@ -9,7 +9,7 @@ if [ -z "$DISPLAY" ]; then
     fi
     EMU="xvfb-run -a $EMU"
 fi
-OUTPUT=$($EMU --script "$STARTUP/stage2_exit.emu" 2>&1)
+OUTPUT=$($EMU --vfs "$VFS/deep.xml" --script "$STARTUP/stage3_vfs.emu" 2>&1)
 STATUS=$?
 if printf '%s' "$OUTPUT" | grep -q "GUI is unavailable"; then
     echo "  skip: GUI is unavailable (no tkinter)"
@@ -17,4 +17,5 @@ if printf '%s' "$OUTPUT" | grep -q "GUI is unavailable"; then
 fi
 expect_status 0
 expect_output "[debug]   no-gui = False"
+expect_output "[debug]   vfs    = $VFS/deep.xml"
 finish

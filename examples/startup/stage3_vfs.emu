@@ -1,0 +1,4 @@
+# Stage 3: look at the loaded VFS and leave the emulator.
+vfs-info
+vfs-tree
+exit
