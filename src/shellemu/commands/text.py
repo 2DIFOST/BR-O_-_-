@@ -65,26 +65,41 @@ def column_width(rows: list[Row], letters: str, operands: int) -> int:
     return len(str(sum(row.size for row in rows)))
 
 
-def cmd_wc(shell, args: list[str]) -> Response:
-    """Count lines (-l), words (-w) and bytes (-c) of files."""
-    response = Response()
-    try:
-        flags, paths = split_options("wc", args, WC_OPTIONS)
-    except UsageError as error:
-        response.err(str(error))
-        return response
+def parse_wc_args(args: list[str]) -> tuple[str, list[str]]:
+    """Return the selected counters (letters) and the file operands.
+
+    Raises UsageError for an unknown option or a missing operand.
+    """
+    flags, paths = split_options("wc", args, WC_OPTIONS)
     if not paths:
-        response.err("wc: missing file operand")
-        return response
-    letters = "".join(c for c in WC_OPTIONS if c in flags) or WC_OPTIONS
-    items = [read_row(shell, path, letters) for path in paths]
+        raise UsageError("wc: missing file operand")
+    letters = "".join(c for c in WC_OPTIONS if c in flags)
+    return letters or WC_OPTIONS, paths
+
+
+def print_rows(
+    response: Response, items: list[Row | str], letters: str
+) -> None:
+    """Print the counters of all files, the errors and the total."""
     rows = [item for item in items if isinstance(item, Row)]
-    width = column_width(rows, letters, len(paths))
+    width = column_width(rows, letters, len(items))
     for item in items:
         if isinstance(item, Row):
             response.out(format_row(item, width))
         else:
             response.err(item)
-    if len(paths) >= MIN_OPERANDS_FOR_TOTAL:
+    if len(items) >= MIN_OPERANDS_FOR_TOTAL:
         response.out(format_row(total_row(rows, letters), width))
+
+
+def cmd_wc(shell, args: list[str]) -> Response:
+    """Count lines (-l), words (-w) and bytes (-c) of files."""
+    response = Response()
+    try:
+        letters, paths = parse_wc_args(args)
+    except UsageError as error:
+        response.err(str(error))
+        return response
+    items = [read_row(shell, path, letters) for path in paths]
+    print_rows(response, items, letters)
     return response
