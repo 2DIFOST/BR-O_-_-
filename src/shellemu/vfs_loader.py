@@ -15,7 +15,7 @@ Format::
 import base64
 import binascii
 import os
-import xml.etree.ElementTree as ET
+from xml.etree import ElementTree as xml_tree
 
 from .errors import VfsError, VfsFormatError
 from .vfs import ERR_IS_DIR, Directory, File, Node, Vfs
@@ -29,7 +29,7 @@ FORBIDDEN_NAMES = (".", "..")
 SEPARATOR = "/"
 
 
-def check_name(element: ET.Element) -> str:
+def check_name(element: xml_tree.Element) -> str:
     """Return the name of an element after checking that it is valid."""
     name = element.get("name")
     if not name:
@@ -51,7 +51,7 @@ def decode_base64(text: str, name: str) -> bytes:
         ) from error
 
 
-def read_file_data(element: ET.Element, name: str) -> bytes:
+def read_file_data(element: xml_tree.Element, name: str) -> bytes:
     """Return the bytes of a file described by ``element``."""
     if len(element):
         raise VfsFormatError(f"file '{name}' must not contain elements")
@@ -68,7 +68,7 @@ def read_file_data(element: ET.Element, name: str) -> bytes:
             )
 
 
-def build_node(element: ET.Element) -> Node:
+def build_node(element: xml_tree.Element) -> Node:
     """Create a file or a directory (with content) from an element."""
     match element.tag:
         case "dir":
@@ -82,7 +82,7 @@ def build_node(element: ET.Element) -> Node:
     return node
 
 
-def fill_directory(directory: Directory, element: ET.Element) -> None:
+def fill_directory(directory: Directory, element: xml_tree.Element) -> None:
     """Create the children of ``directory`` from sub-elements."""
     if (element.text or "").strip():
         raise VfsFormatError(
@@ -97,7 +97,7 @@ def fill_directory(directory: Directory, element: ET.Element) -> None:
         directory.add(node)
 
 
-def build_root(element: ET.Element) -> Directory:
+def build_root(element: xml_tree.Element) -> Directory:
     """Create the root directory from the ``<vfs>`` element."""
     if element.tag != ROOT_TAG:
         raise VfsFormatError(
@@ -129,8 +129,8 @@ def load_vfs(path: str) -> Vfs:
     """
     data = read_bytes(path)
     try:
-        root = build_root(ET.fromstring(data))
-    except ET.ParseError as error:
+        root = build_root(xml_tree.fromstring(data))
+    except xml_tree.ParseError as error:
         raise VfsError(
             f"cannot load VFS '{path}': invalid XML ({error})"
         ) from error
