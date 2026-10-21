@@ -1,4 +1,5 @@
 """Tests of command execution in the shell core."""
+from functools import cached_property
 import unittest
 
 from shellemu.response import STATUS_NOT_FOUND, STATUS_OK
@@ -13,8 +14,10 @@ def texts(response):
 class ShellTest(unittest.TestCase):
     """Behaviour of the shell core and error reporting."""
 
-    def setUp(self):
-        self.shell = Shell("tester@box")
+    @cached_property
+    def shell(self):
+        """Return a fresh shell for every test."""
+        return Shell("tester@box")
 
     def test_prompt_contains_identity_and_directory(self):
         self.assertEqual(self.shell.prompt(), "tester@box:/$ ")

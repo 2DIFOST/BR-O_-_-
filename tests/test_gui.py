@@ -1,5 +1,6 @@
 """Tests of the graphical interface (skipped without a display)."""
 import os
+from functools import cached_property
 import unittest
 
 from helpers import EXAMPLE_VFS, write_temp
@@ -22,18 +23,26 @@ def make_window():
         return None
 
 
+def close_window(window):
+    """Destroy the window unless the test has already closed it."""
+    try:
+        window.root.destroy()
+    except tkinter.TclError:
+        pass
+
+
 @unittest.skipIf(tkinter is None, "tkinter is not installed")
 class GuiTest(unittest.TestCase):
     """The window must show the dialog like a terminal."""
 
-    def setUp(self):
-        self.window = make_window()
-        if self.window is None:
+    @cached_property
+    def window(self):
+        """Return a new window; the test is skipped without a display."""
+        window = make_window()
+        if window is None:
             self.skipTest("no display available")
-
-    def tearDown(self):
-        if self.window is not None:
-            self.window.root.destroy()
+        self.addCleanup(close_window, window)
+        return window
 
     def output_text(self):
         """Return everything shown in the output area."""
@@ -82,7 +91,6 @@ class GuiTest(unittest.TestCase):
         self.assertTrue(self.window.session.finished)
         with self.assertRaises(tkinter.TclError):
             self.window.root.winfo_exists()
-        self.window = None
 
     def test_history_with_up_key(self):
         self.type_line("ls")

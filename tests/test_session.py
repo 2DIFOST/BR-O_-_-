@@ -1,5 +1,6 @@
 """Tests of the dialog session and startup scripts."""
 import os
+from functools import cached_property
 import unittest
 
 from helpers import EXAMPLE_VFS, TEST_DATA, ListOutput, write_temp
@@ -11,9 +12,15 @@ from shellemu.shell import Shell
 class SessionTest(unittest.TestCase):
     """Running of lines and scripts."""
 
-    def setUp(self):
-        self.output = ListOutput()
-        self.session = Session(Shell("u@h"), self.output)
+    @cached_property
+    def output(self):
+        """Return a fresh output for every test."""
+        return ListOutput()
+
+    @cached_property
+    def session(self):
+        """Return a fresh session writing to ``output``."""
+        return Session(Shell("u@h"), self.output)
 
     def test_run_line_echoes_input(self):
         self.session.run_line("echo a")
@@ -91,9 +98,15 @@ class StartupTest(unittest.TestCase):
 class VfsStartupTest(unittest.TestCase):
     """Loading of the VFS at startup."""
 
-    def setUp(self):
-        self.output = ListOutput()
-        self.session = Session(Shell("u@h"), self.output)
+    @cached_property
+    def output(self):
+        """Return a fresh output for every test."""
+        return ListOutput()
+
+    @cached_property
+    def session(self):
+        """Return a fresh session writing to ``output``."""
+        return Session(Shell("u@h"), self.output)
 
     def test_vfs_is_loaded(self):
         path = os.path.join(EXAMPLE_VFS, "deep.xml")

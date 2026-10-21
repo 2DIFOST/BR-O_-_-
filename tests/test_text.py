@@ -1,4 +1,5 @@
 """Tests of the commands wc and echo (stage 4)."""
+from functools import cached_property
 import unittest
 
 from helpers import shell_with, texts
@@ -7,8 +8,10 @@ from helpers import shell_with, texts
 class WcTest(unittest.TestCase):
     """Counting of lines, words and bytes."""
 
-    def setUp(self):
-        self.shell = shell_with("several_files.xml")
+    @cached_property
+    def shell(self):
+        """Return a fresh shell for every test."""
+        return shell_with("several_files.xml")
 
     def test_all_counters_by_default(self):
         self.assertEqual(
@@ -76,8 +79,10 @@ class WcTest(unittest.TestCase):
 class EchoTest(unittest.TestCase):
     """Printing of the arguments."""
 
-    def setUp(self):
-        self.shell = shell_with("minimal.xml")
+    @cached_property
+    def shell(self):
+        """Return a fresh shell for every test."""
+        return shell_with("minimal.xml")
 
     def test_echo_joins_arguments_with_one_space(self):
         self.assertEqual(

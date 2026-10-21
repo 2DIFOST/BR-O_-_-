@@ -1,4 +1,5 @@
 """Tests of the commands ls and cd on a VFS (stage 4)."""
+from functools import cached_property
 import unittest
 
 from helpers import shell_with, texts
@@ -7,9 +8,15 @@ from helpers import shell_with, texts
 class LsTest(unittest.TestCase):
     """Listing of directories and files."""
 
-    def setUp(self):
-        self.shell = shell_with("several_files.xml")
-        self.deep = shell_with("deep.xml")
+    @cached_property
+    def shell(self):
+        """Return a fresh shell for every test."""
+        return shell_with("several_files.xml")
+
+    @cached_property
+    def deep(self):
+        """Return a fresh shell with the deep VFS."""
+        return shell_with("deep.xml")
 
     def test_plain_listing_is_sorted(self):
         self.assertEqual(texts(self.shell.execute("ls")), [
@@ -89,8 +96,10 @@ class LsTest(unittest.TestCase):
 class CdTest(unittest.TestCase):
     """Changing the current directory."""
 
-    def setUp(self):
-        self.shell = shell_with("deep.xml")
+    @cached_property
+    def shell(self):
+        """Return a fresh shell for every test."""
+        return shell_with("deep.xml")
 
     def test_cd_relative_and_absolute(self):
         self.assertTrue(self.shell.execute("cd home/user").ok)

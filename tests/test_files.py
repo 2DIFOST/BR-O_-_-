@@ -1,4 +1,5 @@
 """Tests of the commands rm and cp that change the VFS (stage 5)."""
+from functools import cached_property
 import unittest
 
 from helpers import shell_with, texts
@@ -7,8 +8,10 @@ from helpers import shell_with, texts
 class RmTest(unittest.TestCase):
     """Removing files and directories in memory."""
 
-    def setUp(self):
-        self.shell = shell_with("deep.xml")
+    @cached_property
+    def shell(self):
+        """Return a fresh shell for every test."""
+        return shell_with("deep.xml")
 
     def names(self, path="/"):
         """Return the names listed by ``ls`` for ``path``."""
@@ -109,8 +112,10 @@ class RmTest(unittest.TestCase):
 class CpTest(unittest.TestCase):
     """Copying files and directories in memory."""
 
-    def setUp(self):
-        self.shell = shell_with("deep.xml")
+    @cached_property
+    def shell(self):
+        """Return a fresh shell for every test."""
+        return shell_with("deep.xml")
 
     def run_ok(self, line):
         """Execute ``line`` and check that it succeeds."""

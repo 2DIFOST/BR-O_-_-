@@ -1,4 +1,5 @@
 """Tests of the command history."""
+from functools import cached_property
 import unittest
 
 from shellemu.history import History
@@ -7,10 +8,13 @@ from shellemu.history import History
 class HistoryTest(unittest.TestCase):
     """Navigation through the entered lines."""
 
-    def setUp(self):
-        self.history = History()
+    @cached_property
+    def history(self):
+        """Return a history with three entered lines."""
+        history = History()
         for line in ("ls", "cd a", "ls -l"):
-            self.history.add(line)
+            history.add(line)
+        return history
 
     def test_previous_walks_back_and_stops_at_start(self):
         self.assertEqual(self.history.previous(), "ls -l")
